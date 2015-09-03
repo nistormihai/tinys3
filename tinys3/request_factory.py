@@ -28,10 +28,20 @@ class S3Request(object):
         self.tls = conn.tls
         self.endpoint = conn.endpoint
 
+    def url_for_bucket(self, bucket):
+        protocol = 'https' if self.tls else 'http'
+
+        return "%s://%s.%s" % (protocol, bucket, self.endpoint)
+
     def bucket_url(self, key, bucket):
         protocol = 'https' if self.tls else 'http'
 
         return "%s://%s/%s/%s" % (protocol, self.endpoint, bucket, key.lstrip('/'))
+
+    def endpoint_url(self):
+        protocol = 'https' if self.tls else 'http'
+
+        return "%s://%s" % (protocol, self.endpoint)
 
     def run(self):
         raise NotImplementedError()
@@ -103,6 +113,21 @@ class ListRequest(S3Request):
             more = root.find(k('IsTruncated')).text == 'true'
             if more:
                 marker = p['key']
+
+
+class ListBucketObjectsRequest(S3Request):
+    def __init__(self, conn, bucket, extra_params=None):
+        super(ListBucketObjectsRequest, self).__init__(conn)
+        self.bucket = bucket
+        self.extra_params = extra_params
+
+    def run(self):
+        url = self.url_for_bucket(self.bucket)
+        r = self.adapter().get(url, auth=self.auth, params=self.extra_params)
+
+        r.raise_for_status()
+
+        return r
 
 
 class UploadRequest(S3Request):

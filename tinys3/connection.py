@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .auth import S3Auth
-from .request_factory import UploadRequest, UpdateMetadataRequest, CopyRequest, DeleteRequest, GetRequest, ListRequest
+from .request_factory import UploadRequest, UpdateMetadataRequest, CopyRequest, DeleteRequest, GetRequest, ListRequest, ListBucketObjectsRequest
 
 
 class Base(object):
@@ -96,7 +96,23 @@ class Base(object):
 
         """
         r = ListRequest(self, prefix, self.bucket(bucket))
+        return self.run(r)
 
+    def get_bucket_objects(self, bucket=None, extra_params=None):
+        """
+        Get the list of objects in a specified bucket
+        Params:
+            - bucket (Optional) The name of the bucket to use(can be skipped if setting the default_bucket)
+            - extra_params (Optional) Extra parameters to be sent with the request(Check the documentation for valid params:http://docs.aws.amazon.com/AmazonS3/2006-03-01/API/RESTBucketGET.html)
+        Returns:
+            - A response object from the requests lib or a future that wraps that response object if used with a pool.
+
+        Usage with marker set if the last request was truncated:
+
+        >>> conn.get_bucket_objects('sample_bucket', extra_params={'marker': last_returned_key})
+
+        """
+        r = ListBucketObjectsRequest(self, self.bucket(bucket), extra_params=extra_params)
         return self.run(r)
 
     def upload(self, key, local_file,
